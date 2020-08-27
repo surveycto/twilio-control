@@ -1,17 +1,132 @@
-/* global fieldProperties, setAnswer, goToNextField, clearAnswer */
+// Put this at the top of your script when testing in a web browser
+class Choice {
+  constructor (value, index, label, selected, image) {
+    this.CHOICE_INDEX = index
+    this.CHOICE_VALUE = String(value)
+    this.CHOICE_LABEL = label
+    if (selected) {
+      this.CHOICE_SELECTED = true
+    } else {
+      this.CHOICE_SELECTED = false
+    }
+    this.CHOICE_IMAGE = image
+  }
+}
 
-// References to the supported choice containers
+var fieldProperties = {
+  CHOICES: [
+    new Choice(1, 0, 'Yes'),
+    new Choice(0, 1, 'No'),
+  ],
+  METADATA: '',
+  LABEL: 'This is a label',
+  HINT: 'This is a hint',
+  PARAMETERS: [ // action callurl recordingurl authToken
+    {
+      key: 'action',
+      value: getAction
+    },
+    {
+      key: 'callurl',
+      value: getCallurl
+    },
+    {
+      key: 'recordingurl',
+      value: getRecordingurl
+    },
+    {
+      key: 'authToken',
+      value: getAuthToken
+    }
+  ],
+  FIELDTYPE: 'select_multiple',
+  APPEARANCE: '',
+  LANGUAGE: 'english'
+}
+
+function setAnswer (ans) {
+  console.log('Set answer to: ' + ans)
+}
+
+function setMetaData (string) {
+  fieldProperties.METADATA = string
+}
+
+function getMetaData () {
+  return fieldProperties.METADATA
+}
+
+function getPluginParameter (param) {
+  const parameters = fieldProperties.PARAMETERS
+  if (parameters != null) {
+    for (const p of fieldProperties.PARAMETERS) {
+      const key = p.key
+      if (key == param) {
+        return p.value
+      } // End IF
+    } // End FOR
+  } // End IF
+}
+
+function goToNextField () {
+  console.log('Skipped to next field')
+}
+
+// setFocus() // Use this if your script includes a setFocus() function
+// document.body.classList.add('android-collect') //
+// Above for testing only */
+
+/* global fieldProperties, setAnswer, clearAnswer, XMLHttpRequest, ActiveXObject, btoa */
+
+var mainContainer = document.querySelector('#main-container')
 var radioButtonsContainer = document.getElementById('radio-buttons-container') // default radio buttons
 var selectDropDownContainer = document.getElementById('select-dropdown-container') // minimal appearance
+var confirmationContainer = document.querySelector('#confirmation-container')
+var confirmationAction = document.querySelector('#confirm-action')
+var yesButton = document.querySelector('#yes')
+var noButton = document.querySelector('#no')
 
-// Detect right-to-left languages
-function isRTL (s) {
-  var ltrChars = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' + '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF'
-  var rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC'
-  var rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']')
+var action = getPluginParameter('action')
+var callurl = getPluginParameter('callurl')
+var recordingurl = getPluginParameter('recordingurl')
+var authToken = getPluginParameter('authtoken')
 
-  return rtlDirCheck.test(s)
+var accountSID
+var callSID
+
+var selectedChoice
+var errorFound = false
+
+if (action == null) {
+  foundError('No action to take found')
 }
+
+if (recordingurl == null) {
+  if (callurl == null) {
+    foundError('No call information detected. Please go back and make a call.')
+  } else {
+    var beforeExt = callurl.match(/https:\/\/api\.twilio\.com\/[^.]+/g) // Before the .json part
+    if (beforeExt == null) {
+      // ERROR
+    } else {
+      recordingurl = beforeExt[0] + '/Recordings.json'
+    }
+  }
+}
+
+try { // Look for account SID
+  accountSID = recordingurl.match(/AC[^/]+/g)[0]
+} catch (e) {
+  foundError('Missing account SID. Make sure the recording URL or the call URL contains a code that starts with "AC".')
+}
+
+try { // Look for call SID
+  callSID = recordingurl.match(/CA[^/]+/g)[0]
+} catch (e) {
+  foundError('Missing call SID. Make sure the recording URL or the call URL contains a code that starts with "CA".')
+}
+
+confirmationContainer.style.display = 'none'
 
 // Prepare the current webview, making adjustments for any appearance options
 
@@ -27,26 +142,6 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   selectDropDownContainer.parentElement.removeChild(selectDropDownContainer) // remove the select dropdown container
 }
 
-// Define what happens when the user attempts to clear the response
-
-function clearAnswer () {
-  // minimal appearance
-  if (fieldProperties.APPEARANCE.includes('minimal') === true) {
-    selectDropDownContainer.value = ''
-  } else { // all other appearances
-    var selectedOption = document.querySelector('input[name="opt"]:checked')
-    if (selectedOption) {
-      selectedOption.checked = false
-      selectedOption.parentElement.classList.remove('selected')
-    }
-  }
-}
-
-// Save the user's response (update the current answer)
-
-function change () {
-  setAnswer(this.value)
-}
 // minimal appearance
 if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   selectDropDownContainer.onchange = change // when the select dropdown is changed, call the change() function (which will update the current value)
@@ -65,6 +160,165 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   }
 }
 
+// Define what happens when the user attempts to clear the response
+function clearAnswer () {
+  // minimal appearance
+  if (fieldProperties.APPEARANCE.includes('minimal') === true) {
+    selectDropDownContainer.value = ''
+  } else { // all other appearances
+    var selectedOption = document.querySelector('input[name="opt"]:checked')
+    if (selectedOption) {
+      selectedOption.checked = false
+      selectedOption.parentElement.classList.remove('selected')
+    }
+  }
+}
+
+// Detect right-to-left languages
+function isRTL (s) {
+  var ltrChars = 'A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02B8\u0300-\u0590\u0800-\u1FFF' + '\u2C00-\uFB1C\uFDFE-\uFE6F\uFEFD-\uFFFF'
+  var rtlChars = '\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC'
+  var rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']')
+
+  return rtlDirCheck.test(s)
+}
+
+// Start HTTP functions
+
+function makeHttpObject () {
+  try {
+    return new XMLHttpRequest()
+  } catch (error) { }
+  try {
+    return new ActiveXObject('Msxml2.XMLHTTP')
+  } catch (error) { }
+  try {
+    return new ActiveXObject('Microsoft.XMLHTTP')
+  } catch (error) { }
+
+  throw new Error('Could not create HTTP request object.')
+}
+
+// type: Type of request, such as GET or POST
+// runFunction: Function to run when response is received
+function createHttpRequest (type, requestUrl, params = undefined, runFunction, newParams) {
+  console.log('About to trigger an HTTP request')
+  console.log('Type:', type)
+  console.log('URL:', requestUrl)
+  console.log('Parameters:', params)
+  var request
+  var responseText = getMetaData()
+
+  try {
+    request = makeHttpObject()
+
+    request.open(type, requestUrl, true)
+    request.setRequestHeader('Authorization', 'Basic ' + btoa(unescape(encodeURIComponent(accountSID + ':' + authToken))))
+    request.setRequestHeader('Content-type', 'application/x-www-form-urlencoded')
+
+    request.onreadystatechange = function () {
+      if (request.readyState === 4) {
+        responseText = request.responseText
+
+        if (!responseText) {
+          // NEED TO UPDATE FOR WHEN RECORDING IS DELETED
+          // if (requestUrl.endsWith('/Recordings.json')) { }
+          updateStatusField('undefined error')
+        } else {
+          setMetaData(responseText)
+
+          console.log('Got response:')
+          console.log(responseText)
+          runFunction(JSON.parse(responseText), newParams)
+        }
+      }
+    }
+    console.log('About to send response')
+    request.send(params)
+  } catch (error) {
+    updateStatusField(error)
+  }
+}
+
+function getRecordingInfo (nextFunction) {
+  createHttpRequest('GET', recordingurl, undefined, nextFunction)
+}
+
+function stopRecordings (requestText) {
+  var recordingArray = requestText.recordings
+  var numRecordings = recordingArray.length
+
+  for (var r = 0; r < numRecordings; r++) {
+    var requestUrl
+    var recordingInfo = recordingArray[r]
+    var recordingSID = recordingInfo.sid
+    var recordingStatus = recordingInfo.status
+
+    if (recordingStatus !== 'completed') { // If not completed, then need to stop the recording
+      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
+      createHttpRequest('DELETE', requestUrl, 'Status=stopped', stopComplete)
+    } // End checking recording status
+  } // End FOR loop through each recording
+}
+
+function deleteRecordings (requestText) {
+  var recordingArray = requestText.recordings
+  var numRecordings = recordingArray.length
+
+  for (var r = 0; r < numRecordings; r++) {
+    var requestUrl
+    var recordingInfo = recordingArray[r]
+    var recordingSID = recordingInfo.sid
+    var recordingStatus = recordingInfo.status
+
+    if (recordingStatus === 'completed') {
+      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
+      createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
+    } else { // If not completed, then need to stop the recording before deleting it
+      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
+      createHttpRequest('DELETE', requestUrl, 'Status=stopped', deleteSingleRecording)
+    } // End checking recording status
+  } // End FOR loop through each recording
+} // End deleteRecordings
+
+function deleteSingleRecording (requestText) {
+  if (requestText.status === 'stopped') {
+    var recordingSID = requestText.sid
+    var requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
+    createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
+  } else {
+    // ERROR while attempting to stop recording
+  }
+}
+
+function deletionComplete (requestText) {
+  console.log('Deletion complete.')
+  console.log(requestText)
+  setAnswer(selectedChoice)
+}
+
+function stopComplete (requestText) {
+  console.log('Stop complete.')
+  console.log(requestText)
+  setAnswer(selectedChoice)
+}
+
+function recordingStarted (requestText) {
+  console.log('Start recording complete.')
+  console.log(requestText)
+  setAnswer(selectedChoice)
+}
+
+function updateStatusField (text) {
+
+}
+
+// Start other functions
+
+function change () {
+  confirmation(this.value)
+}
+
 // If the field label or hint contain any HTML that isn't in the form definition, then the < and > characters will have been replaced by their HTML character entities, and the HTML won't render. We need to turn those HTML entities back to actual < and > characters so that the HTML renders properly. This will allow you to render HTML from field references in your field label or hint.
 function unEntity (str) {
   return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -74,4 +328,57 @@ if (fieldProperties.LABEL) {
 }
 if (fieldProperties.HINT) {
   document.querySelector('.hint').innerHTML = unEntity(fieldProperties.HINT)
+}
+
+function confirmation (selected) {
+  selectedChoice = selected
+  confirmationContainer.style.display = 'block'
+  if (selected === 0) {
+    confirmationAction.innerHTML = 'not '
+  } else {
+    confirmationAction.innerHTML = ''
+  }
+
+  yesButton.onclick = function () {
+    executeAction()
+  }
+
+  noButton.onclick = function () {
+    clearAnswer()
+    confirmationContainer.style.display = 'none'
+  }
+}
+
+function executeAction () {
+  if (selectedChoice === '0') {
+    if (action === 'delete') {
+      console.log('About to delete')
+      deleteRecordings()
+    } else if (action === 'stop') {
+      console.log('About to stop')
+      getRecordingInfo(stopRecordings)
+    } else {
+      setAnswer(selectedChoice)
+    }
+  } else if (selectedChoice === '1') {
+    if (action === 'start') {
+      console.log('About to start')
+      var requestUrl = 'https://api.twilio.com//2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings.json'
+      var params = 'RecordingStatusCallbackEvent=in-progress completed absent'
+      console.log('About to START a recording')
+      createHttpRequest('POST', requestUrl, params, recordingStarted)
+    } else {
+      setAnswer(selectedChoice)
+    }
+  }
+}
+
+// If an error was already found, then adds the error message. Otherwise, clears the screen, and displayes the new error.
+function foundError (message) {
+  if (errorFound) {
+    mainContainer.innerHTML += '\n<br>' + message
+  } else {
+    errorFound = true
+    mainContainer.innerHTML = message
+  }
 }
