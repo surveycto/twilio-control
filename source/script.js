@@ -27,15 +27,15 @@ var fieldProperties = {
       value: getAction
     },
     {
-      key: 'callurl',
+      key: 'call_url',
       value: getCallurl
     },
     {
-      key: 'recordingurl',
+      key: 'recording_url',
       value: getRecordingurl
     },
     {
-      key: 'authToken',
+      key: 'auth_token',
       value: getAuthToken
     }
   ],
@@ -85,11 +85,12 @@ var confirmationContainer = document.querySelector('#confirmation-container')
 var confirmationAction = document.querySelector('#confirm-action')
 var yesButton = document.querySelector('#yes')
 var noButton = document.querySelector('#no')
+var waitingContainer = document.querySelector('#waiting')
 
 var action = getPluginParameter('action')
-var callurl = getPluginParameter('callurl')
-var recordingurl = getPluginParameter('recordingurl')
-var authToken = getPluginParameter('authtoken')
+var callurl = getPluginParameter('call_url')
+var recordingurl = getPluginParameter('recording_url')
+var authToken = getPluginParameter('auth_token')
 
 var accountSID
 var callSID
