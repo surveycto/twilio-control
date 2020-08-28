@@ -288,7 +288,7 @@ function stopRecordings (requestText) {
 
     if (recordingStatus !== 'completed') { // If not completed, then need to stop the recording
       requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('POST', requestUrl, 'Status=stopped', stopComplete)
+      createHttpRequest('POST', requestUrl, 'Status=stopped', actionComplete, [r + 1, numRecordings])
     } // End checking recording status
   } // End FOR loop through each recording
 }
@@ -298,6 +298,7 @@ function deleteRecordings (requestText) {
   var numRecordings = recordingArray.length
 
   if (numRecordings === 0) { // If there are no recordings, then nothing to worry about!
+    setMetaData('2|No recordings found')
     completeField()
   } else {
     for (var r = 0; r < numRecordings; r++) {
@@ -308,20 +309,20 @@ function deleteRecordings (requestText) {
 
       if (recordingStatus === 'completed') {
         requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
-        createHttpRequest('DELETE', requestUrl, undefined, deletionComplete, [r + 1, numRecordings])
+        createHttpRequest('DELETE', requestUrl, undefined, actionComplete, [r + 1, numRecordings])
       } else { // If not completed, then need to stop the recording before deleting it
         requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-        createHttpRequest('POST', requestUrl, 'Status=stopped', deleteSingleRecording)
+        createHttpRequest('POST', requestUrl, 'Status=stopped', deleteSingleRecording, [r + 1, numRecordings])
       } // End checking recording status
     } // End FOR loop through each recording
   }
 } // End deleteRecordings
 
-function deleteSingleRecording (requestText) {
+function deleteSingleRecording (requestText, recNumbers) {
   if (requestText.status === 'stopped') {
     var recordingSID = requestText.sid
     var requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
-    createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
+    createHttpRequest('DELETE', requestUrl, undefined, deletionComplete, recNumbers)
   } else {
     // ERROR while attempting to stop recording
   }
@@ -331,20 +332,21 @@ function deletionComplete (requestText, recNumbers) {
   console.log('Deletion complete.')
   console.log(requestText)
   if (recNumbers[0] === recNumbers[1]) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
-    setAnswer(selectedChoice)
+    checkRecordingStatus()
   }
-}
-
-function stopComplete (requestText) {
-  console.log('Stop complete.')
-  console.log(requestText)
-  setAnswer(selectedChoice)
 }
 
 function recordingStarted (requestText) {
   console.log('Start recording complete.')
   console.log(requestText)
-  setAnswer(selectedChoice)
+  setMetaData('1')
+  setAnswer(selectedChoice) // This should hav verification
+}
+
+function actionComplete (requestText, recNumbers) {
+  if (recNumbers[0] === recNumbers[1]) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
+    checkRecordingStatus()
+  }
 }
 
 function checkRecordingStatus () {
@@ -363,9 +365,9 @@ function confirmRecordingStatus (requestText) {
       rsidArray.push(sid)
     }
     var allNotDeleted = rsidArray.join(', ')
-    setMetaData('The following recordings were not deleted: ' + allNotDeleted)
+    setMetaData('0|The following recordings were not deleted: ' + allNotDeleted)
   } else {
-    setMetaData('')
+    setMetaData('1')
   }
 
   completeField()
@@ -424,7 +426,8 @@ function executeAction () {
       console.log('About to stop')
       getRecordingInfo(stopRecordings)
     } else {
-      setAnswer(selectedChoice)
+      setMetaData('2|No action needed to be taken')
+      completeField()
     }
   } else if (selectedChoice === '1') {
     if (action === 'start') {
@@ -434,7 +437,8 @@ function executeAction () {
       console.log('About to START a recording')
       createHttpRequest('POST', requestUrl, params, recordingStarted)
     } else {
-      setAnswer(selectedChoice)
+      setMetaData('2|No action needed to be taken')
+      completeField()
     }
   }
 }
