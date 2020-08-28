@@ -76,6 +76,9 @@ function goToNextField () {
 // document.body.classList.add('android-collect') //
 // Above for testing only */
 
+
+
+
 /* global fieldProperties, setAnswer, clearAnswer, XMLHttpRequest, ActiveXObject, btoa */
 
 var mainContainer = document.querySelector('#main-container')
@@ -161,6 +164,8 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   }
 }
 
+setInterval(timer, 10)
+
 // Define what happens when the user attempts to clear the response
 function clearAnswer () {
   // minimal appearance
@@ -182,6 +187,25 @@ function isRTL (s) {
   var rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']')
 
   return rtlDirCheck.test(s)
+}
+
+var timePassed = 0
+var startTime
+var timerRunning = false
+
+function startTimer () {
+  startTime = Date.now()
+  timerRunning = true
+}
+
+function timer () {
+  if (timerRunning) {
+    timePassed = Date.now() - startTime
+    if (timePassed >= 8000) {
+      setMetaData('0|Ran out of time')
+      completeField()
+    }
+  }
 }
 
 // Start HTTP functions
@@ -219,12 +243,15 @@ function createHttpRequest (type, requestUrl, params = undefined, runFunction, n
 
     request.onreadystatechange = function () {
       if (request.readyState === 4) {
+        console.log(request)
         responseText = request.responseText
 
-        if (!responseText) {
-          // NEED TO UPDATE FOR WHEN RECORDING IS DELETED
-          // if (requestUrl.endsWith('/Recordings.json')) { }
-          updateStatusField('undefined error')
+        if (request.status === 0) {
+          setMetaData('0|Unable to connect to internet')
+          completeField()
+        } else if (!responseText) {
+          setMetaData('0|No response from Twilio')
+          completeField()
         } else {
           setMetaData(responseText)
 
@@ -237,7 +264,9 @@ function createHttpRequest (type, requestUrl, params = undefined, runFunction, n
     console.log('About to send response')
     request.send(params)
   } catch (error) {
-    updateStatusField(error)
+    console.log('Error here: ', error)
+    setMetaData('0|' + String(error))
+    completeField()
   }
 }
 
@@ -249,6 +278,8 @@ function stopRecordings (requestText) {
   var recordingArray = requestText.recordings
   var numRecordings = recordingArray.length
 
+  console.log('There are', numRecordings, 'recordings')
+
   for (var r = 0; r < numRecordings; r++) {
     var requestUrl
     var recordingInfo = recordingArray[r]
@@ -257,7 +288,7 @@ function stopRecordings (requestText) {
 
     if (recordingStatus !== 'completed') { // If not completed, then need to stop the recording
       requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, 'Status=stopped', stopComplete)
+      createHttpRequest('POST', requestUrl, 'Status=stopped', stopComplete)
     } // End checking recording status
   } // End FOR loop through each recording
 }
@@ -266,20 +297,24 @@ function deleteRecordings (requestText) {
   var recordingArray = requestText.recordings
   var numRecordings = recordingArray.length
 
-  for (var r = 0; r < numRecordings; r++) {
-    var requestUrl
-    var recordingInfo = recordingArray[r]
-    var recordingSID = recordingInfo.sid
-    var recordingStatus = recordingInfo.status
+  if (numRecordings === 0) { // If there are no recordings, then nothing to worry about!
+    completeField()
+  } else {
+    for (var r = 0; r < numRecordings; r++) {
+      var requestUrl
+      var recordingInfo = recordingArray[r]
+      var recordingSID = recordingInfo.sid
+      var recordingStatus = recordingInfo.status
 
-    if (recordingStatus === 'completed') {
-      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
-    } else { // If not completed, then need to stop the recording before deleting it
-      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, 'Status=stopped', deleteSingleRecording)
-    } // End checking recording status
-  } // End FOR loop through each recording
+      if (recordingStatus === 'completed') {
+        requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
+        createHttpRequest('DELETE', requestUrl, undefined, deletionComplete, [r + 1, numRecordings])
+      } else { // If not completed, then need to stop the recording before deleting it
+        requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
+        createHttpRequest('POST', requestUrl, 'Status=stopped', deleteSingleRecording)
+      } // End checking recording status
+    } // End FOR loop through each recording
+  }
 } // End deleteRecordings
 
 function deleteSingleRecording (requestText) {
@@ -292,10 +327,12 @@ function deleteSingleRecording (requestText) {
   }
 }
 
-function deletionComplete (requestText) {
+function deletionComplete (requestText, recNumbers) {
   console.log('Deletion complete.')
   console.log(requestText)
-  setAnswer(selectedChoice)
+  if (recNumbers[0] === recNumbers[1]) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
+    setAnswer(selectedChoice)
+  }
 }
 
 function stopComplete (requestText) {
@@ -310,8 +347,34 @@ function recordingStarted (requestText) {
   setAnswer(selectedChoice)
 }
 
-function updateStatusField (text) {
+function checkRecordingStatus () {
+  getRecordingInfo(confirmRecordingStatus)
+}
 
+// This function does final checks to make sure everything went well, and then sets the answer
+function confirmRecordingStatus (requestText) {
+  var recordingInfo = requestText.recordings
+  var numRecordings = recordingInfo.length
+
+  if ((numRecordings > 0) && (action === 'delete')) {
+    var rsidArray = []
+    for (var r = 0; r < numRecordings; r++) {
+      var sid = recordingInfo[r].sid
+      rsidArray.push(sid)
+    }
+    var allNotDeleted = rsidArray.join(', ')
+    setMetaData('The following recordings were not deleted: ' + allNotDeleted)
+  } else {
+    setMetaData('')
+  }
+
+  completeField()
+}
+
+function completeField () {
+  timerRunning = false
+  setAnswer(selectedChoice)
+  waitingContainer.innerHTML = 'All set! You can now move to the next field.'
 }
 
 // Start other functions
@@ -334,7 +397,7 @@ if (fieldProperties.HINT) {
 function confirmation (selected) {
   selectedChoice = selected
   confirmationContainer.style.display = 'block'
-  if (selected === 0) {
+  if (selectedChoice === '0') {
     confirmationAction.innerHTML = 'not '
   } else {
     confirmationAction.innerHTML = ''
@@ -351,10 +414,12 @@ function confirmation (selected) {
 }
 
 function executeAction () {
+  waitingContainer.innerHTML = 'Enumerator, please wait...' // Next: Customize this text
+  startTimer()
   if (selectedChoice === '0') {
     if (action === 'delete') {
       console.log('About to delete')
-      deleteRecordings()
+      getRecordingInfo(deleteRecordings)
     } else if (action === 'stop') {
       console.log('About to stop')
       getRecordingInfo(stopRecordings)
