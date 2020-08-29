@@ -1,6 +1,5 @@
 /* global fieldProperties, setAnswer, XMLHttpRequest, ActiveXObject, btoa, getPluginParameter, getMetaData, setMetaData */
 
-var mainContainer = document.querySelector('#main-container')
 var radioButtonsContainer = document.getElementById('radio-buttons-container') // default radio buttons
 var selectDropDownContainer = document.getElementById('select-dropdown-container') // minimal appearance
 var confirmationContainer = document.querySelector('#confirmation-container')
@@ -19,22 +18,19 @@ var completeText = getPluginParameter('complete_text')
 var yesText = getPluginParameter('Yes')
 var noText = getPluginParameter('No')
 
+// Default parameter values
 if (waitingText == null) {
   waitingText = 'Enumerator: Please wait...'
 }
-
 if (completeText == null) {
   completeText = 'All set! You can now move to the next field.'
 }
-
 if (yesText != null) {
   yesButton.innerHTML = yesText
 }
-
 if (noText != null) {
   noButton.innerHTML = noText
 }
-
 if (timeout == null) {
   timeout = 8000
 }
@@ -44,6 +40,7 @@ var callSID
 
 var selectedChoice // This will store the choice selected, 1 or 0. When the answer is ready to be set (meaning the enumerator can move on to the next field), this will be used in the setAnswer() function.
 var errorFound = false // If an error is found, then field plug-in will not work properly
+var errorLogs = [] // Stores all errors when setting up the field plug-in. Hopefully won't be needed, since errors should be addressed by the form designer before deploying the form.
 
 // Timing vars
 var timePassed = 0
@@ -239,8 +236,8 @@ function stopRecordings (requestText) {
   if (numUrls === 0) { // If this is true, then all have already been stopped
     completeField('2|No recordings had been started, so there were none to delete.')
   } else {
-    for (var r = 0; r < numUrls; r++) { // Go through each recording that has not yet been stopped and stops them
-      var requestUrl = urls[r]
+    for (var s = 0; s < numUrls; s++) { // Go through each recording that has not yet been stopped and stops them
+      requestUrl = urls[s]
       createHttpRequest('POST', requestUrl, 'Status=stopped', actionComplete, numUrls)
     } // End FOR through each recording that has not been stopped
   } // End running recordings found
@@ -283,7 +280,7 @@ function deleteSingleRecording (requestText, recNumbers) {
 } // End deleteSingleRecording
 
 // This is called when an action is complete (such as if a recording has been stopped). When the script has gone through all of the recordings, it is time to check the recording status.
-function actionComplete (requestText, numRecordings) {
+function actionComplete (requestText, numRecordings) { // The requestText is not used here, but it is needeed as a parameter so that it can be used when the HTTP request is complete
   numComplete++
   if (numComplete === numRecordings) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
     checkRecordingStatus()
@@ -355,7 +352,8 @@ function confirmation (selected) {
 
   yesButton.onclick = function () {
     if (errorFound) { // If there was an error, instead of executing the action, reports that there was an error
-      completeField('0|Did not receive all needed data.')
+      var allErrors = errorLogs.join('-')
+      completeField('0|Did not receive all needed data-' + allErrors)
     } else {
       executeAction()
     }
@@ -392,6 +390,7 @@ function executeAction () {
 
 // If an error was already found, then adds the error message.
 function foundError (message) {
+  errorLogs.push(message)
   if (errorFound) {
     waitingContainer.innerHTML += '\n<br>' + message
   } else {
