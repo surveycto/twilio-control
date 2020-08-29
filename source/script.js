@@ -10,7 +10,6 @@ var waitingContainer = document.querySelector('#waiting')
 
 var action = getPluginParameter('action')
 var callurl = getPluginParameter('call_url')
-var recordingurl = getPluginParameter('recording_url')
 var authToken = getPluginParameter('auth_token')
 var timeout = getPluginParameter('timeout')
 var waitingText = getPluginParameter('waiting_text')
@@ -37,6 +36,7 @@ if (timeout == null) {
 
 var accountSID
 var callSID
+var recordingurl // This will be retrieved using the call URL.
 
 var selectedChoice // This will store the choice selected, 1 or 0. When the answer is ready to be set (meaning the enumerator can move on to the next field), this will be used in the setAnswer() function.
 var errorFound = false // If an error is found, then field plug-in will not work properly
@@ -53,20 +53,18 @@ if (action == null) {
   foundError('No action to take found')
 }
 
-if (recordingurl == null) { // We need the recording URL sometimes, so if only the call URL was received, this constucts the recording URL
-  if (callurl == null) {
-    foundError('No call information detected. Please go back and make a call.')
+if (callurl == null) {
+  foundError('No call information detected. Please go back and make a call.')
+} else {
+  var beforeExt = callurl.match(/https:\/\/api\.twilio\.com\/[^.]+/g) // Before the .json part
+  if (beforeExt == null) {
+    selectedChoice = 0
+    foundError('Was unable to retrieve call information. Please report this issue to your manager.')
+    completeField('0|No valid URI to call or recordings')
   } else {
-    var beforeExt = callurl.match(/https:\/\/api\.twilio\.com\/[^.]+/g) // Before the .json part
-    if (beforeExt == null) {
-      selectedChoice = 0
-      foundError('Was unable to retrieve call information. Please report this issue to your manager.')
-      completeField('0|No valid URI to call or recordings')
-    } else {
-      recordingurl = beforeExt[0] + '/Recordings.json'
-    }
-  } // End callurl found
-} // End recordingurl not found
+    recordingurl = beforeExt[0] + '/Recordings.json'
+  }
+} // End callurl found
 
 try { // Look for account SID
   accountSID = recordingurl.match(/AC[^/]+/g)[0]
