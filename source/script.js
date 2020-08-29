@@ -1,84 +1,3 @@
-/* // Put this at the top of your script when testing in a web browser
-class Choice {
-  constructor (value, index, label, selected, image) {
-    this.CHOICE_INDEX = index
-    this.CHOICE_VALUE = String(value)
-    this.CHOICE_LABEL = label
-    if (selected) {
-      this.CHOICE_SELECTED = true
-    } else {
-      this.CHOICE_SELECTED = false
-    }
-    this.CHOICE_IMAGE = image
-  }
-}
-
-var fieldProperties = {
-  CHOICES: [
-    new Choice(1, 0, 'Yes'),
-    new Choice(0, 1, 'No'),
-  ],
-  METADATA: '',
-  LABEL: 'This is a label',
-  HINT: 'This is a hint',
-  PARAMETERS: [ // action callurl recordingurl authToken
-    {
-      key: 'action',
-      value: getAction
-    },
-    {
-      key: 'call_url',
-      value: getCallurl
-    },
-    {
-      key: 'recording_url',
-      value: getRecordingurl
-    },
-    {
-      key: 'auth_token',
-      value: getAuthToken
-    }
-  ],
-  FIELDTYPE: 'select_multiple',
-  APPEARANCE: '',
-  LANGUAGE: 'english'
-}
-
-function setAnswer (ans) {
-  console.log('Set answer to: ' + ans)
-}
-
-function setMetaData (string) {
-  fieldProperties.METADATA = string
-}
-
-function getMetaData () {
-  return fieldProperties.METADATA
-}
-
-function getPluginParameter (param) {
-  const parameters = fieldProperties.PARAMETERS
-  if (parameters != null) {
-    for (const p of fieldProperties.PARAMETERS) {
-      const key = p.key
-      if (key == param) {
-        return p.value
-      } // End IF
-    } // End FOR
-  } // End IF
-}
-
-function goToNextField () {
-  console.log('Skipped to next field')
-}
-
-// setFocus() // Use this if your script includes a setFocus() function
-// document.body.classList.add('android-collect') //
-// Above for testing only */
-
-
-
-
 /* global fieldProperties, setAnswer, XMLHttpRequest, ActiveXObject, btoa, getPluginParameter */
 
 var mainContainer = document.querySelector('#main-container')
@@ -226,10 +145,6 @@ function makeHttpObject () {
 // type: Type of request, such as GET or POST
 // runFunction: Function to run when response is received
 function createHttpRequest (type, requestUrl, params = undefined, runFunction, newParams) {
-  console.log('About to trigger an HTTP request')
-  console.log('Type:', type)
-  console.log('URL:', requestUrl)
-  console.log('Parameters:', params)
   var request
   var responseText = getMetaData()
 
@@ -242,23 +157,19 @@ function createHttpRequest (type, requestUrl, params = undefined, runFunction, n
 
     request.onreadystatechange = function () {
       if (request.readyState === 4) {
-        console.log(request)
         responseText = request.responseText
 
         if (request.status === 0) {
           completeField('0|Unable to connect to internet')
         } else if (!responseText) {
           completeField('0|No response from Twilio')
-        } else {console.log('Got response:')
-          console.log(responseText)
+        } else {
           runFunction(JSON.parse(responseText), newParams)
         }
       }
     }
-    console.log('About to send response')
     request.send(params)
   } catch (error) {
-    console.log('Error here: ', error)
     completeField('0|' + String(error))
   }
 }
@@ -271,7 +182,6 @@ function stopRecordings (requestText) {
   var recordingArray = requestText.recordings
   var numRecordings = recordingArray.length
 
-  console.log('There are', numRecordings, 'recordings')
   var urls = [] // List of recording URLs that need to be stopped
 
   for (var r = 0; r < numRecordings; r++) {
@@ -332,17 +242,19 @@ function deleteSingleRecording (requestText, recNumbers) {
 }
 
 function deletionComplete (requestText, recNumbers) {
-  console.log('Deletion complete.')
-  console.log(requestText)
   if (recNumbers[0] === recNumbers[1]) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
     checkRecordingStatus()
   }
 }
 
 function recordingStarted (requestText) {
-  console.log('Start recording complete.')
-  console.log(requestText)
-  completeField('1|Recording successfully started.') // This should have verification
+  var recordingStatus = requestText.status
+  if (recordingStatus === 'in-progress') {
+    var recordingUri = requestText.uri
+    completeField('1|https://api.twilio.com' + recordingUri)
+  } else {
+    completeField('0|Failed to start recording.')
+  }
 }
 
 function actionComplete (requestText, recNumbers) {
@@ -421,20 +333,16 @@ function executeAction () {
   startTimer()
   if (selectedChoice === '0') {
     if (action === 'delete') {
-      console.log('About to delete')
       getRecordingInfo(deleteRecordings)
     } else if (action === 'stop') {
-      console.log('About to stop')
       getRecordingInfo(stopRecordings)
     } else {
       completeField('2|No action needed to be taken')
     }
   } else if (selectedChoice === '1') {
     if (action === 'start') {
-      console.log('About to start')
       var requestUrl = 'https://api.twilio.com//2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings.json'
       var params = 'RecordingStatusCallbackEvent=in-progress completed absent'
-      console.log('About to START a recording')
       createHttpRequest('POST', requestUrl, params, recordingStarted)
     } else {
       completeField('2|No action needed to be taken')
