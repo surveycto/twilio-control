@@ -13,12 +13,22 @@ var action = getPluginParameter('action')
 var callurl = getPluginParameter('call_url')
 var recordingurl = getPluginParameter('recording_url')
 var authToken = getPluginParameter('auth_token')
+var timeout = getPluginParameter('timeout')
+
+if (timeout == null) {
+  timeout = 8000
+}
 
 var accountSID
 var callSID
 
-var selectedChoice
+var selectedChoice // This will store the choice selected, 1 or 0. When the answer is ready to be set (meaning the enumerator can move on to the next field), this will be used in the setAnswer() function.
 var errorFound = false
+
+// Timing vars
+var timePassed = 0
+var startTime
+var timerRunning = false
 
 if (action == null) {
   foundError('No action to take found')
@@ -108,9 +118,6 @@ function isRTL (s) {
   return rtlDirCheck.test(s)
 }
 
-var timePassed = 0
-var startTime
-var timerRunning = false
 
 function startTimer () {
   startTime = Date.now()
@@ -120,7 +127,7 @@ function startTimer () {
 function timer () {
   if (timerRunning) {
     timePassed = Date.now() - startTime
-    if (timePassed >= 8000) {
+    if (timePassed >= timeout) {
       completeField('0|Ran out of time')
     }
   }
