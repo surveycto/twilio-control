@@ -1,118 +1,72 @@
-// Put this at the top of your script when testing in a web browser
-class Choice {
-  constructor (value, index, label, selected, image) {
-    this.CHOICE_INDEX = index
-    this.CHOICE_VALUE = String(value)
-    this.CHOICE_LABEL = label
-    if (selected) {
-      this.CHOICE_SELECTED = true
-    } else {
-      this.CHOICE_SELECTED = false
-    }
-    this.CHOICE_IMAGE = image
-  }
-}
+/* global fieldProperties, setAnswer, XMLHttpRequest, ActiveXObject, btoa, getPluginParameter, getMetaData, setMetaData */
 
-var fieldProperties = {
-  CHOICES: [
-    new Choice(1, 0, 'Yes'),
-    new Choice(0, 1, 'No'),
-  ],
-  METADATA: '',
-  LABEL: 'This is a label',
-  HINT: 'This is a hint',
-  PARAMETERS: [ // action callurl recordingurl authToken
-    {
-      key: 'action',
-      value: getAction
-    },
-    {
-      key: 'callurl',
-      value: getCallurl
-    },
-    {
-      key: 'recordingurl',
-      value: getRecordingurl
-    },
-    {
-      key: 'authToken',
-      value: getAuthToken
-    }
-  ],
-  FIELDTYPE: 'select_multiple',
-  APPEARANCE: '',
-  LANGUAGE: 'english'
-}
-
-function setAnswer (ans) {
-  console.log('Set answer to: ' + ans)
-}
-
-function setMetaData (string) {
-  fieldProperties.METADATA = string
-}
-
-function getMetaData () {
-  return fieldProperties.METADATA
-}
-
-function getPluginParameter (param) {
-  const parameters = fieldProperties.PARAMETERS
-  if (parameters != null) {
-    for (const p of fieldProperties.PARAMETERS) {
-      const key = p.key
-      if (key == param) {
-        return p.value
-      } // End IF
-    } // End FOR
-  } // End IF
-}
-
-function goToNextField () {
-  console.log('Skipped to next field')
-}
-
-// setFocus() // Use this if your script includes a setFocus() function
-// document.body.classList.add('android-collect') //
-// Above for testing only */
-
-/* global fieldProperties, setAnswer, clearAnswer, XMLHttpRequest, ActiveXObject, btoa */
-
-var mainContainer = document.querySelector('#main-container')
 var radioButtonsContainer = document.getElementById('radio-buttons-container') // default radio buttons
 var selectDropDownContainer = document.getElementById('select-dropdown-container') // minimal appearance
 var confirmationContainer = document.querySelector('#confirmation-container')
 var confirmationAction = document.querySelector('#confirm-action')
 var yesButton = document.querySelector('#yes')
 var noButton = document.querySelector('#no')
+var waitingContainer = document.querySelector('#waiting')
 
 var action = getPluginParameter('action')
-var callurl = getPluginParameter('callurl')
-var recordingurl = getPluginParameter('recordingurl')
-var authToken = getPluginParameter('authtoken')
+var callurl = getPluginParameter('call_url')
+var authToken = getPluginParameter('auth_token')
+var timeout = getPluginParameter('timeout')
+var waitingText = getPluginParameter('waiting_text')
+var completeText = getPluginParameter('complete_text')
+var yesText = getPluginParameter('yes')
+var noText = getPluginParameter('no')
+
+// Default parameter values
+if (waitingText == null) {
+  waitingText = 'Enumerator: Please wait...'
+}
+if (completeText == null) {
+  completeText = 'All set! You can now move to the next field.'
+}
+if (yesText != null) {
+  yesButton.innerHTML = yesText
+}
+if (noText != null) {
+  noButton.innerHTML = noText
+}
+if (timeout == null) {
+  timeout = 8000
+} else {
+  timeout = parseInt(timeout) * 1000
+}
 
 var accountSID
 var callSID
+var recordingurl // This will be retrieved using the call URL.
 
-var selectedChoice
-var errorFound = false
+var selectedChoice // This will store the choice selected, 1 or 0. When the answer is ready to be set (meaning the enumerator can move on to the next field), this will be used in the setAnswer() function.
+var errorFound = false // If an error is found, then field plug-in will not work properly
+var errorLogs = [] // Stores all errors when setting up the field plug-in. Hopefully won't be needed, since errors should be addressed by the form designer before deploying the form.
+
+// Timing vars
+var timePassed = 0
+var startTime // This will store the current Unix time as soon as an action is executed. That way, if too much time passes, then it will allow the enumerator to move on.
+var timerRunning = false // Timer starts when an action is executed.
+
+var numComplete = 0 // How many of the recording actions have been completed. For example, if there are 5 recordings for a call. then this will slowly increase to 5
 
 if (action == null) {
   foundError('No action to take found')
 }
 
-if (recordingurl == null) {
-  if (callurl == null) {
-    foundError('No call information detected. Please go back and make a call.')
+if (callurl == null) {
+  foundError('No call information detected. Please go back and make a call.')
+} else {
+  var beforeExt = callurl.match(/https:\/\/api\.twilio\.com\/[^.]+/g) // Before the .json part
+  if (beforeExt == null) {
+    selectedChoice = 0
+    foundError('Was unable to retrieve call information. Please report this issue to your manager.')
+    completeField('0|No valid URI to call or recordings')
   } else {
-    var beforeExt = callurl.match(/https:\/\/api\.twilio\.com\/[^.]+/g) // Before the .json part
-    if (beforeExt == null) {
-      // ERROR
-    } else {
-      recordingurl = beforeExt[0] + '/Recordings.json'
-    }
+    recordingurl = beforeExt[0] + '/Recordings.json'
   }
-}
+} // End callurl found
 
 try { // Look for account SID
   accountSID = recordingurl.match(/AC[^/]+/g)[0]
@@ -126,7 +80,7 @@ try { // Look for call SID
   foundError('Missing call SID. Make sure the recording URL or the call URL contains a code that starts with "CA".')
 }
 
-confirmationContainer.style.display = 'none'
+confirmationContainer.style.display = 'none' // Hide the yes/no buttons until ready
 
 // Prepare the current webview, making adjustments for any appearance options
 
@@ -138,7 +92,6 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   if (fieldProperties.LANGUAGE !== null && isRTL(fieldProperties.LANGUAGE)) {
     radioButtonsContainer.dir = 'rtl'
   }
-
   selectDropDownContainer.parentElement.removeChild(selectDropDownContainer) // remove the select dropdown container
 }
 
@@ -160,6 +113,15 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   }
 }
 
+if (fieldProperties.LABEL) {
+  document.querySelector('.label').innerHTML = unEntity(fieldProperties.LABEL)
+}
+if (fieldProperties.HINT) {
+  document.querySelector('.hint').innerHTML = unEntity(fieldProperties.HINT)
+}
+
+setInterval(timer, 10)
+
 // Define what happens when the user attempts to clear the response
 function clearAnswer () {
   // minimal appearance
@@ -172,6 +134,8 @@ function clearAnswer () {
       selectedOption.parentElement.classList.remove('selected')
     }
   }
+  setAnswer('')
+  setMetaData()
 }
 
 // Detect right-to-left languages
@@ -181,6 +145,20 @@ function isRTL (s) {
   var rtlDirCheck = new RegExp('^[^' + ltrChars + ']*[' + rtlChars + ']')
 
   return rtlDirCheck.test(s)
+}
+
+function startTimer () {
+  startTime = Date.now()
+  timerRunning = true
+}
+
+function timer () { // Timer starts running after an action has started. After a period of time, times out, and allows the enumerator to continue
+  if (timerRunning) {
+    timePassed = Date.now() - startTime
+    if ((timePassed >= timeout) && (getMetaData() == null)) {
+      completeField('0|Ran out of time')
+    }
+  }
 }
 
 // Start HTTP functions
@@ -202,10 +180,6 @@ function makeHttpObject () {
 // type: Type of request, such as GET or POST
 // runFunction: Function to run when response is received
 function createHttpRequest (type, requestUrl, params = undefined, runFunction, newParams) {
-  console.log('About to trigger an HTTP request')
-  console.log('Type:', type)
-  console.log('URL:', requestUrl)
-  console.log('Parameters:', params)
   var request
   var responseText = getMetaData()
 
@@ -220,23 +194,18 @@ function createHttpRequest (type, requestUrl, params = undefined, runFunction, n
       if (request.readyState === 4) {
         responseText = request.responseText
 
-        if (!responseText) {
-          // NEED TO UPDATE FOR WHEN RECORDING IS DELETED
-          // if (requestUrl.endsWith('/Recordings.json')) { }
-          updateStatusField('undefined error')
+        if (request.status === 0) {
+          completeField('0|Unable to connect to internet')
+        } else if (!responseText) {
+          completeField('0|No response from Twilio')
         } else {
-          setMetaData(responseText)
-
-          console.log('Got response:')
-          console.log(responseText)
           runFunction(JSON.parse(responseText), newParams)
         }
       }
     }
-    console.log('About to send response')
     request.send(params)
   } catch (error) {
-    updateStatusField(error)
+    completeField('0|' + String(error))
   }
 }
 
@@ -244,73 +213,120 @@ function getRecordingInfo (nextFunction) {
   createHttpRequest('GET', recordingurl, undefined, nextFunction)
 }
 
+// After receiving the call information, extracts the recording information, and stops all recordings
 function stopRecordings (requestText) {
   var recordingArray = requestText.recordings
   var numRecordings = recordingArray.length
 
+  var urls = [] // List of recording URLs that need to be stopped
+
   for (var r = 0; r < numRecordings; r++) {
     var requestUrl
     var recordingInfo = recordingArray[r]
     var recordingSID = recordingInfo.sid
     var recordingStatus = recordingInfo.status
 
-    if (recordingStatus !== 'completed') { // If not completed, then need to stop the recording
+    if (recordingStatus !== 'completed') { // If not completed, then added to list of recordings that need to be stopped
       requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, 'Status=stopped', stopComplete)
+      urls.push(requestUrl)
     } // End checking recording status
   } // End FOR loop through each recording
-}
 
+  var numUrls = urls.length
+  if (numUrls === 0) { // If this is true, then all have already been stopped
+    completeField('2|No recordings had been started, so there were none to delete.')
+  } else {
+    for (var s = 0; s < numUrls; s++) { // Go through each recording that has not yet been stopped and stops them
+      requestUrl = urls[s]
+      createHttpRequest('POST', requestUrl, 'Status=stopped', actionComplete, numUrls)
+    } // End FOR through each recording that has not been stopped
+  } // End running recordings found
+} // End stopRecordings function
+
+// After receiving the call information, extracts the recording information, and stops and deletes all recordings
 function deleteRecordings (requestText) {
   var recordingArray = requestText.recordings
   var numRecordings = recordingArray.length
 
-  for (var r = 0; r < numRecordings; r++) {
-    var requestUrl
-    var recordingInfo = recordingArray[r]
-    var recordingSID = recordingInfo.sid
-    var recordingStatus = recordingInfo.status
+  if (numRecordings === 0) { // If there are no recordings, then nothing to worry about!
+    completeField('2|No recordings found.')
+  } else {
+    for (var r = 0; r < numRecordings; r++) {
+      var requestUrl
+      var recordingInfo = recordingArray[r]
+      var recordingSID = recordingInfo.sid
+      var recordingStatus = recordingInfo.status
 
-    if (recordingStatus === 'completed') {
-      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
-    } else { // If not completed, then need to stop the recording before deleting it
-      requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
-      createHttpRequest('DELETE', requestUrl, 'Status=stopped', deleteSingleRecording)
-    } // End checking recording status
-  } // End FOR loop through each recording
+      if (recordingStatus === 'completed') {
+        requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
+        createHttpRequest('DELETE', requestUrl, undefined, actionComplete, numRecordings)
+      } else { // If not completed, then need to stop the recording before deleting it
+        requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings/' + recordingSID + '.json'
+        createHttpRequest('POST', requestUrl, 'Status=stopped', deleteSingleRecording, numRecordings)
+      } // End checking recording status
+    } // End FOR loop through each recording
+  }
 } // End deleteRecordings
 
-function deleteSingleRecording (requestText) {
+// This is called if a recording had not yet been stopped. After the recording has been stopped, this deletes it
+function deleteSingleRecording (requestText, recNumbers) {
   if (requestText.status === 'stopped') {
     var recordingSID = requestText.sid
     var requestUrl = 'https://api.twilio.com/2010-04-01/Accounts/' + accountSID + '/Recordings/' + recordingSID + '.json'
-    createHttpRequest('DELETE', requestUrl, undefined, deletionComplete)
+    createHttpRequest('DELETE', requestUrl, undefined, actionComplete, recNumbers)
   } else {
     // ERROR while attempting to stop recording
   }
+} // End deleteSingleRecording
+
+// This is called when an action is complete (such as if a recording has been stopped). When the script has gone through all of the recordings, it is time to check the recording status.
+function actionComplete (requestText, numRecordings) { // The requestText is not used here, but it is needeed as a parameter so that it can be used when the HTTP request is complete
+  numComplete++
+  if (numComplete === numRecordings) { // If on the final recording (e.g. recording 5 of 5), then can set the answer
+    checkRecordingStatus()
+  }
 }
 
-function deletionComplete (requestText) {
-  console.log('Deletion complete.')
-  console.log(requestText)
-  setAnswer(selectedChoice)
-}
-
-function stopComplete (requestText) {
-  console.log('Stop complete.')
-  console.log(requestText)
-  setAnswer(selectedChoice)
-}
-
+// Checks to confirm the recording has been started.
 function recordingStarted (requestText) {
-  console.log('Start recording complete.')
-  console.log(requestText)
-  setAnswer(selectedChoice)
+  var recordingStatus = requestText.status
+  if (recordingStatus === 'in-progress') {
+    var recordingUri = requestText.uri
+    completeField('1|https://api.twilio.com' + recordingUri)
+  } else {
+    completeField('0|Failed to start recording.')
+  }
 }
 
-function updateStatusField (text) {
+// This is run after all commands to stop or delete the recordings are complete. This checks to make sure it was successful.
+function checkRecordingStatus () {
+  getRecordingInfo(confirmRecordingStatus)
+}
 
+// This function does final checks to make sure everything went well, and then sets the answer
+function confirmRecordingStatus (requestText) {
+  var recordingInfo = requestText.recordings
+  var numRecordings = recordingInfo.length
+
+  if ((numRecordings > 0) && (action === 'delete')) {
+    var rsidArray = []
+    for (var r = 0; r < numRecordings; r++) {
+      var sid = recordingInfo[r].sid
+      rsidArray.push(sid)
+    }
+    var allNotDeleted = rsidArray.join(', ')
+    completeField('0|The following recordings were not deleted: ' + allNotDeleted)
+  } else {
+    completeField('1|All recordings were successfully deleted')
+  }
+} // End confirmRecordingStatus
+
+// Sets the metadata and answer after everything is complete.
+function completeField (result) {
+  timerRunning = false
+  setMetaData(result)
+  setAnswer(selectedChoice)
+  waitingContainer.innerHTML = completeText
 }
 
 // Start other functions
@@ -323,62 +339,62 @@ function change () {
 function unEntity (str) {
   return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
 }
-if (fieldProperties.LABEL) {
-  document.querySelector('.label').innerHTML = unEntity(fieldProperties.LABEL)
-}
-if (fieldProperties.HINT) {
-  document.querySelector('.hint').innerHTML = unEntity(fieldProperties.HINT)
-}
 
+// Confirms that the enumerator selected "Yes" or "No", so that nothing is deleted or stopped by mistake
 function confirmation (selected) {
   selectedChoice = selected
   confirmationContainer.style.display = 'block'
-  if (selected === 0) {
+  if (selectedChoice === '0') {
     confirmationAction.innerHTML = 'not '
   } else {
     confirmationAction.innerHTML = ''
   }
 
   yesButton.onclick = function () {
-    executeAction()
+    if (errorFound) { // If there was an error, instead of executing the action, reports that there was an error
+      var allErrors = errorLogs.join('-')
+      completeField('0|Did not receive all needed data-' + allErrors)
+    } else {
+      executeAction()
+    }
   }
 
   noButton.onclick = function () {
     clearAnswer()
     confirmationContainer.style.display = 'none'
   }
-}
+} // End confirmtation
 
+// Starts the execution of the action stopping, deletion, etc
 function executeAction () {
+  waitingContainer.innerHTML = waitingText
+  startTimer()
   if (selectedChoice === '0') {
     if (action === 'delete') {
-      console.log('About to delete')
-      deleteRecordings()
+      getRecordingInfo(deleteRecordings)
     } else if (action === 'stop') {
-      console.log('About to stop')
       getRecordingInfo(stopRecordings)
     } else {
-      setAnswer(selectedChoice)
+      completeField('2|No action needed to be taken')
     }
   } else if (selectedChoice === '1') {
     if (action === 'start') {
-      console.log('About to start')
       var requestUrl = 'https://api.twilio.com//2010-04-01/Accounts/' + accountSID + '/Calls/' + callSID + '/Recordings.json'
       var params = 'RecordingStatusCallbackEvent=in-progress completed absent'
-      console.log('About to START a recording')
       createHttpRequest('POST', requestUrl, params, recordingStarted)
     } else {
-      setAnswer(selectedChoice)
+      completeField('2|No action needed to be taken')
     }
   }
-}
+} // End executeAction
 
-// If an error was already found, then adds the error message. Otherwise, clears the screen, and displayes the new error.
+// If an error was already found, then adds the error message.
 function foundError (message) {
+  errorLogs.push(message)
   if (errorFound) {
-    mainContainer.innerHTML += '\n<br>' + message
+    waitingContainer.innerHTML += '\n<br>' + message
   } else {
     errorFound = true
-    mainContainer.innerHTML = message
+    waitingContainer.innerHTML = 'There was an issue when loading the call information<br>\n<br>\n' + message
   }
 }

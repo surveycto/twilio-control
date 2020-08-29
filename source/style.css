@@ -89,36 +89,6 @@
   max-width: 75%;
 }
 
-/*
-  ------------------------
-  Appearance-specific styles
-  ------------------------
-*/
-
-/* 'quick' appearance' */
-
-.choice-container.appearance-quick {
-  background-color: #EEE;
-}
-.choice-container.appearance-quick:hover {
-  background-color: #E1F4FD;
-}
-.choice-container.appearance-quick.selected {
-  background-color: #f9f9f9;
-  color: #2ea3cf;
-}
-.appearance-quick .quick-appearance-icon {
-  display: block;
-  float: right;
-  fill: rgba(0,0,0,.65);
-  height: 1em;
-  width: 1em;
-}
-
-.choices-container[dir="rtl"] .appearance-quick .quick-appearance-icon {
-  float: left;
-}
-
 /* 'minimal' appearance */
 
 #select-dropdown-container {
@@ -128,112 +98,26 @@
   border: 1px solid #2EA3CF;
 }
 
-/* 'likert' appearance */
+button.whitebutton, button.bluebutton {
+  width: 55px;
+  font-weight: 500;
+  border-radius: 10px;
+  box-shadow: inset 0 -1px 0 0 rgba(0, 0, 0, 0.09);
+  display: inline-block;
+  padding: 6px 0px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  margin-right: 5px;
+}
 
-#likert-container {
-  display: none;
-  width: 100%;
+button.whitebutton{
+  background-color: #ffffff;
+  border-color: #367fa9;
+  color: #000000;
 }
-.likert-choice-container {
-  display: flex;
-  flex: 1 1 1px;
-  flex-direction: column;
-  align-items: center;
-}
-.likert-input-button-container {
-  width: 100%;
-  text-align: center;
-  margin: 1.5rem 0;
-}
-/* this is the grey line that connects the choice buttons */
-.likert-input-button-container:before {
-  content: '';
-  display: block;
-  z-index: -1;
-  position: relative;
-  top: .4rem;
-  height: .2rem;
-  margin-bottom: -.2rem;
-  width: 100%;
-}
-.likert-choice-container:first-of-type .likert-input-button-container:before {
-  width: 50%;
-  left: 50%;
-}
-.likert-choice-container:last-of-type .likert-input-button-container:before {
-  width: 50%;
-}
-/* this is the choice button that replaces the regular radio button */
-.likert-input-button {
-  width: 1rem;
-  height: 1rem;
-  margin: 0 auto;
-  border-radius: 1rem;
-  background-color: white;
-  border: 1px solid rgba(0,0,0,.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-/* this is the blue dot that designates which choice is selected */
-.likert-input-button-mark > .likert-input-button-mark {
-  display: none;
-}
-.likert-input-button.selected > .likert-input-button-mark {
-  width: .6rem;
-  height: .6rem;
-  border-radius: .3rem;
-  background-color: #2EA3CF;
-  margin: 0;
-  display: inline;
-}
-/* this selects everything within the likert-choice-label class, i.e., text labels and image labels */
-.likert-choice-label * {
-  text-align: center;
-  margin: .5rem;
-  max-width: 100%;
-}
-/* these are some minor differences between the likert appearance on web vs Android/iOS Collect */
-.web-collect .likert-input-button-container:before {
-  background-color: #efefef;
-}
-.android-collect .likert-input-button-container:before,
-.ios-collect .likert-input-button-container:before {
-  background-color: rgba(0,0,0,.5);
-}
-.web-collect .likert-choice-label-text {
-  font-weight: bold;
-}
-.android-collect .likert-choice-label-text,
-.ios-collect .likert-choice-label-text {
-  font-size: .875em;
-}
-/* 'likert-min' appearance */
-.likert-min-choice-label-first {
-  position: absolute;
-  top: 6rem;
-  left: 0;
-  width: 50%;
-}
-.likert-min-choice-label-first * {
-  text-align: left;
-}
-.likert-min-choice-label-last {
-  position: absolute;
-  top: 6rem;
-  right: 0;
-  width: 50%;
-}
-.likert-min-choice-label-last * {
-  text-align: right;
-}
-/*
-  ------------------------
-  Other global styles
-  ------------------------
-*/
 
-/* hide SVG symbol definitions */
-.symbol {
-  display: none;
+button.bluebutton{
+  background-color: #047cc2;
+  border-color: #367fa9;
+  color: #ffffff;
 }

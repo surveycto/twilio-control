@@ -1,73 +1,68 @@
-<!--Put this at the top of your template when testing in a web browser-->
-<link rel="stylesheet" type="text/css" href="style.css">
-<script src="test_data.js" charset="UTF-8" defer></script>
-<script src="script.js" charset="UTF-8" defer></script>
+<div class="label default-question-text-size" dir="auto">{{{LABEL}}}</div>
 
-<div id="main-container">
-  <div class="label default-question-text-size" dir="auto">{{{LABEL}}}</div>
+<!-- If there is an image specified in the media:image column, show it here -->
+{{#MEDIAIMAGE}}
+<img src="{{MEDIAIMAGE}}" />
+{{/MEDIAIMAGE}}
 
-  <!-- If there is an image specified in the media:image column, show it here -->
-  {{#MEDIAIMAGE}}
-  <img src="{{MEDIAIMAGE}}" />
-  {{/MEDIAIMAGE}}
+<!-- If there is audio specified in the media:audio column, show it here -->
+{{#MEDIAAUDIO}}
+<audio controls controlsList="nodownload">
+  <source src="{{MEDIAAUDIO}}">
+  Your browser does not support the audio element.
+</audio>
+{{/MEDIAAUDIO}}
 
-  <!-- If there is audio specified in the media:audio column, show it here -->
-  {{#MEDIAAUDIO}}
-  <audio controls controlsList="nodownload">
-    <source src="{{MEDIAAUDIO}}">
-    Your browser does not support the audio element.
-  </audio>
-  {{/MEDIAAUDIO}}
+<!-- If there is a video specified in the media:video column, show it here -->
+{{#MEDIAVIDEO}}
+<video width="100%" height="*" controls controlsList="nodownload">
+  <source src="{{MEDIAVIDEO}}">
+  Your browser does not support the video tag.
+</video>
+{{/MEDIAVIDEO}}
 
-  <!-- If there is a video specified in the media:video column, show it here -->
-  {{#MEDIAVIDEO}}
-  <video width="100%" height="*" controls controlsList="nodownload">
-    <source src="{{MEDIAVIDEO}}">
-    Your browser does not support the video tag.
-  </video>
-  {{/MEDIAVIDEO}}
+<div class="hint default-hint-text-size" dir="auto">{{{HINT}}}</div>
 
-  <div class="hint default-hint-text-size" dir="auto">{{{HINT}}}</div>
-
-  <!-- This is the input area that will be shown by default -->
-  <form class="choices-container" id="radio-buttons-container" dir="auto">
-    {{#CHOICES}}
-    <div class="choice-container {{#CHOICE_SELECTED}}selected{{/CHOICE_SELECTED}}">
-      <input
-             type="radio"
-             value="{{CHOICE_VALUE}}"
-             name="opt"
-             class="choice-input"
-             id="{{CHOICE_INDEX}}"
-             {{#CHOICE_SELECTED}}checked="checked" {{/CHOICE_SELECTED}}
-             {{#READONLY}}disabled{{/READONLY}} />
-      <label class="choice-label" for="{{CHOICE_INDEX}}">
-        <div class="choice-label-text default-answer-text-size">
-          {{{CHOICE_LABEL}}}
-        </div>
-        <!-- if there's a choice image, show that image-->
-        {{#CHOICE_IMAGE}}<img src="{{CHOICE_IMAGE}}" class="choice-label-image" />{{/CHOICE_IMAGE}}
-      </label>
-    </div>
-    {{/CHOICES}}
-  </form>
-
-  <!-- This is what will be shown if the field has the 'minimal' appearance -->
-  <select class="choices-container default-answer-text-size" id="select-dropdown-container">
-    <option value="">Select one answer</option>
-    {{#CHOICES}}
-    <option
-            value="{{CHOICE_VALUE}}"
-            {{#CHOICE_SELECTED}}selected{{/CHOICE_SELECTED}}>
-      {{CHOICE_LABEL}}
-    </option>
-    {{/CHOICES}}
-  </select>
-
-  <div id="confirmation-container">
-    <p>
-      The respondent has <span id="confirm-action"></span>given consent, correct?
-    </p>
-    <div id="confirm-buttons"><button id="yes" class="yes">Yes</button><button id="no" class="no">No</button></div>
+<!-- This is the input area that will be shown by default -->
+<form class="choices-container" id="radio-buttons-container" dir="auto">
+  {{#CHOICES}}
+  <div class="choice-container {{#CHOICE_SELECTED}}selected{{/CHOICE_SELECTED}}">
+    <input
+           type="radio"
+           value="{{CHOICE_VALUE}}"
+           name="opt"
+           class="choice-input"
+           id="{{CHOICE_INDEX}}"
+           {{#CHOICE_SELECTED}}checked="checked" {{/CHOICE_SELECTED}}
+           {{#READONLY}}disabled{{/READONLY}} />
+    <label class="choice-label" for="{{CHOICE_INDEX}}">
+      <div class="choice-label-text default-answer-text-size">
+        {{{CHOICE_LABEL}}}
+      </div>
+      <!-- if there's a choice image, show that image-->
+      {{#CHOICE_IMAGE}}<img src="{{CHOICE_IMAGE}}" class="choice-label-image" />{{/CHOICE_IMAGE}}
+    </label>
   </div>
+  {{/CHOICES}}
+</form>
+
+<!-- This is what will be shown if the field has the 'minimal' appearance -->
+<select class="choices-container default-answer-text-size" id="select-dropdown-container">
+  <option value="">Select one answer</option>
+  {{#CHOICES}}
+  <option
+          value="{{CHOICE_VALUE}}"
+          {{#CHOICE_SELECTED}}selected{{/CHOICE_SELECTED}}>
+    {{CHOICE_LABEL}}
+  </option>
+  {{/CHOICES}}
+</select>
+
+<div id="confirmation-container">
+  <p>
+    The respondent has <span id="confirm-action"></span>given consent, correct?
+  </p>
+  <div id="confirm-buttons"><button id="yes" class="whitebutton">Yes</button><button id="no"
+            class="bluebutton">No</button></div>
 </div>
+<div id="waiting"></div>
