@@ -227,13 +227,27 @@
 .likert-min-choice-label-last * {
   text-align: right;
 }
-/*
-  ------------------------
-  Other global styles
-  ------------------------
-*/
 
-/* hide SVG symbol definitions */
-.symbol {
-  display: none;
+button.whitebutton, button.bluebutton {
+  width: 55px;
+  font-weight: 500;
+  border-radius: 10px;
+  box-shadow: inset 0 -1px 0 0 rgba(0, 0, 0, 0.09);
+  display: inline-block;
+  padding: 6px 0px;
+  font-size: 14px;
+  line-height: 1.42857143;
+  margin-right: 5px;
+}
+
+button.whitebutton{
+  background-color: #ffffff;
+  border-color: #367fa9;
+  color: #000000;
+}
+
+button.bluebutton{
+  background-color: #047cc2;
+  border-color: #367fa9;
+  color: #ffffff;
 }
