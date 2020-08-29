@@ -32,6 +32,8 @@ if (noText != null) {
 }
 if (timeout == null) {
   timeout = 8000
+} else {
+  timeout = parseInt(timeout) * 1000
 }
 
 var accountSID
