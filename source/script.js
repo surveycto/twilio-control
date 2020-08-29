@@ -14,8 +14,8 @@ var authToken = getPluginParameter('auth_token')
 var timeout = getPluginParameter('timeout')
 var waitingText = getPluginParameter('waiting_text')
 var completeText = getPluginParameter('complete_text')
-var yesText = getPluginParameter('Yes')
-var noText = getPluginParameter('No')
+var yesText = getPluginParameter('yes')
+var noText = getPluginParameter('no')
 
 // Default parameter values
 if (waitingText == null) {
