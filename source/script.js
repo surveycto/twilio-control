@@ -116,6 +116,13 @@ if (fieldProperties.APPEARANCE.includes('minimal') === true) {
   }
 }
 
+if (fieldProperties.LABEL) {
+  document.querySelector('.label').innerHTML = unEntity(fieldProperties.LABEL)
+}
+if (fieldProperties.HINT) {
+  document.querySelector('.hint').innerHTML = unEntity(fieldProperties.HINT)
+}
+
 setInterval(timer, 10)
 
 // Define what happens when the user attempts to clear the response
@@ -273,7 +280,7 @@ function deleteSingleRecording (requestText, recNumbers) {
   } else {
     // ERROR while attempting to stop recording
   }
-}
+} // End deleteSingleRecording
 
 // This is called when an action is complete (such as if a recording has been stopped). When the script has gone through all of the recordings, it is time to check the recording status.
 function actionComplete (requestText, numRecordings) {
@@ -315,7 +322,7 @@ function confirmRecordingStatus (requestText) {
   } else {
     completeField('1|All recordings were successfully deleted')
   }
-}
+} // End confirmRecordingStatus
 
 // Sets the metadata and answer after everything is complete.
 function completeField (result) {
@@ -335,12 +342,6 @@ function change () {
 function unEntity (str) {
   return str.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
 }
-if (fieldProperties.LABEL) {
-  document.querySelector('.label').innerHTML = unEntity(fieldProperties.LABEL)
-}
-if (fieldProperties.HINT) {
-  document.querySelector('.hint').innerHTML = unEntity(fieldProperties.HINT)
-}
 
 // Confirms that the enumerator selected "Yes" or "No", so that nothing is deleted or stopped by mistake
 function confirmation (selected) {
@@ -353,17 +354,22 @@ function confirmation (selected) {
   }
 
   yesButton.onclick = function () {
-    executeAction()
+    if (errorFound) { // If there was an error, instead of executing the action, reports that there was an error
+      completeField('0|Did not receive all needed data.')
+    } else {
+      executeAction()
+    }
   }
 
   noButton.onclick = function () {
     clearAnswer()
     confirmationContainer.style.display = 'none'
   }
-}
+} // End confirmtation
 
+// Starts the execution of the action stopping, deletion, etc
 function executeAction () {
-  waitingContainer.innerHTML = waitingText // Next: Customize this text
+  waitingContainer.innerHTML = waitingText
   startTimer()
   if (selectedChoice === '0') {
     if (action === 'delete') {
@@ -382,15 +388,14 @@ function executeAction () {
       completeField('2|No action needed to be taken')
     }
   }
-}
+} // End executeAction
 
-// If an error was already found, then adds the error message. Otherwise, clears the screen, and displayes the new error.
+// If an error was already found, then adds the error message.
 function foundError (message) {
   if (errorFound) {
-    mainContainer.innerHTML += '\n<br>' + message
+    waitingContainer.innerHTML += '\n<br>' + message
   } else {
     errorFound = true
-    mainContainer.innerHTML = message
+    waitingContainer.innerHTML = 'There was an issue when loading the call information<br>\n<br>\n' + message
   }
-  setAnswer('0')
 }
