@@ -124,17 +124,22 @@ setInterval(timer, 10)
 
 // Define what happens when the user attempts to clear the response
 function clearAnswer () {
+  var selectedOption
   // minimal appearance
   if (fieldProperties.APPEARANCE.includes('minimal') === true) {
     selectDropDownContainer.value = ''
   } else { // all other appearances
-    var selectedOption = document.querySelector('input[name="opt"]:checked')
+    selectedOption = document.querySelector('input[name="opt"]:checked')
     if (selectedOption) {
       selectedOption.checked = false
       selectedOption.parentElement.classList.remove('selected')
     }
   }
-  setAnswer()
+  selectedOption = document.querySelector('input[name="opt"]:checked')
+  if (selectedOption) {
+    selectedOption.checked = false
+    selectedOption.parentElement.classList.remove('selected')
+  }
   setMetaData()
 }
 
