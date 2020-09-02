@@ -134,7 +134,7 @@ function clearAnswer () {
       selectedOption.parentElement.classList.remove('selected')
     }
   }
-  setAnswer('')
+  setAnswer()
   setMetaData()
 }
 
@@ -197,12 +197,16 @@ function createHttpRequest (type, requestUrl, params = undefined, runFunction, n
         if (request.status === 0) {
           completeField('0|Unable to connect to internet')
         } else if (!responseText) {
-          completeField('0|No response from Twilio')
+          if (type === 'DELETE') { // The 'DELETE' command does not return response text, so can continue with no response text if that is the case.
+            runFunction(undefined, newParams)
+          } else {
+            completeField('0|No response from Twilio')
+          }
         } else {
           runFunction(JSON.parse(responseText), newParams)
-        }
-      }
-    }
+        } // Done checking request status and text
+      } // Done ready state is 4
+    } // Done with event onreadystatechange
     request.send(params)
   } catch (error) {
     completeField('0|' + String(error))
