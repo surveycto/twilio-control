@@ -73,7 +73,7 @@ Other than the `timeout` parameter, these are great for forms being deployed in 
 
 | Name | Description | Default |
 |:---|:---|:---|
-|`timout`|How long to wait with no response until the enumerator can move on. See [Timeout](#Timeout) below for more information. Takes value in number of seconds.|`8`|
+|`timeout`|How long to wait with no response until the enumerator can move on. See [Timeout](#Timeout) below for more information. Takes value in number of seconds.|`8`|
 |`waiting_text`|Message displayed after the choice has been confirmed by the enumerator, but a response has not yet been received by the Twilio server.|`'Enumerator: Please wait...'`|
 |`complete_text`|Message displayed when the enumerator can move on to the next field. This means either the action has been completed and a response has been received by the server, or it has timed out.|`'All set! You can now move to the next field.'`|
 |`yes`|Text to display for the "Yes" confirmation button after a choice has been selected.|`'Yes'`|
@@ -81,7 +81,7 @@ Other than the `timeout` parameter, these are great for forms being deployed in 
 
 #### Actions
 
-These are the values you can give to the `action` parameter. In this table, 'value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For examample, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1`, only if the choice selected has a value of `0`.
+These are the values you can give to the `action` parameter. In this table, 'value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For example, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1`, only if the choice selected has a value of `0`.
 
 |Value|Trigger|Description|
 |:---|:---|:---|
