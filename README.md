@@ -8,7 +8,9 @@
 
 ## Description
 
-This field plug-in can be used to stop, delete, or start a recording for an active Twilio call. This should be attached to a *select_one* field that has a value of `1` if consent is approved, and a value of `0` if consent is denied (the included "yesno" choice list will work well). Once a choice is selected, the enumerator will be asked to confirm the choice selected, and once they confirm it, an action will be taken if it needs to be taken (see [Actions](#Actions) below to learn more). The enumerator will not be able to continue until the action is successfully completed, or when a certain amount of time has passed after confirming the action (see [Timeout](#Timeout) below to learn more).
+This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our support article on [using Twilio in SurveyCTO](https://docs.google.com/document/d/1jovqNXwO30pCTF3gkXdDodgxcvHLhbljmzXdLgUPchY/edit?usp=sharing).
+
+This field plug-in can be used to stop, delete, or start a recording for an active Twilio call. This should be attached to a *select_one* field that has a value of `1` if consent is approved, and a value of `0` if consent is denied (the included "yesno" choice list will work well).
 
 [![](extras/readme-images/beta-release-download.jpg)](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip)
 
@@ -17,7 +19,8 @@ This field plug-in can be used to stop, delete, or start a recording for an acti
 * Stop all recordings for a call.
 * Stop-and-delete all recordings for a call.
 * Start a recording for a call.
-* Confirm if consent was approved or denied.
+* Confirm by the enumerator if consent was approved or denied.
+* Pause until action is confirmed. The enumerator will not be able to continue until the action is successfully completed, or when a certain amount of time has passed after confirming the action (see [Timeout](#Timeout) below to learn more).
 * Track any issues that may arise, and store the recording URL if it is started.
 
 ### Data format
@@ -58,36 +61,26 @@ For example, if the `action` parameter has a value of 'delete', and the recordin
 
 ### Parameters
 
-#### Required parameters
-
 | Name | Description |
 |:---|:---|
-|`action`|What happens when a choice is selected. See [Actions](#actions) below for a list of values you can use.|
-|`call_url`|The URL to access the call information. In both this field plug-in's sample form, as well as the twilio-call field plug-in, this is stored in the field called "twilio_call_url"|
-|`auth_token`|The authorization token for your Twilio account. (Note: The account SID is not needed, because this is extracted from the `call_url` value.)|
-
-
-#### Optional parameters
-
-Other than the `timeout` parameter, these are great for forms being deployed in other languages.
-
-| Name | Description | Default |
-|:---|:---|:---|
-|`timeout`|How long to wait with no response until the enumerator can move on. See [Timeout](#Timeout) below for more information. Takes value in number of seconds.|`8`|
-|`waiting_text`|Message displayed after the choice has been confirmed by the enumerator, but a response has not yet been received by the Twilio server.|`'Enumerator: Please wait...'`|
-|`complete_text`|Message displayed when the enumerator can move on to the next field. This means either the action has been completed and a response has been received by the server, or it has timed out.|`'All set! You can now move to the next field.'`|
-|`yes`|Text to display for the "Yes" confirmation button after a choice has been selected.|`'Yes'`|
-|`no`|Text to display for the "No" confirmation button after a choice has been selected.|`'No'`|
+|`action` (required)|What happens when a choice is selected. See [Actions](#actions) below for a list of values you can use.|
+|`call_url` (required)|The URL to access the call information. In both this field plug-in's sample form, as well as the twilio-call field plug-in, this is stored in the field called "twilio_call_url"|
+|`auth_token` (required)|The authorization token for your Twilio account. (Note: The account SID is not needed, because this is extracted from the `call_url` value.)|
+|`timeout` (optional)|How long to wait with no response from Twilio until the enumerator can move on. See [Timeout](#Timeout) below for more information. Takes value in number of seconds.|`8`|
+|`waiting_text` (optional)|Message displayed after the consent choice has been confirmed by the enumerator, but a response has not yet been received by the Twilio server.|`'Enumerator: Please wait...'`|
+|`complete_text` (optional)|Message displayed when the enumerator can move on to the next field. This means either the action has been completed and a response has been received by the server, or it has timed out.|`'All set! You can now move to the next field.'`|
+|`yes` (optional)|Text to display for the "Yes" confirmation button after a choice has been selected.|`'Yes'`|
+|`no` (optional)|Text to display for the "No" confirmation button after a choice has been selected.|`'No'`|
 
 #### Actions
 
-These are the values you can give to the `action` parameter. In this table, 'value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For example, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1`, only if the choice selected has a value of `0`.
+These are the values you can give to the `action` parameter. In this table, 'Value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For example, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1`, only if the choice selected has a value of `0`.
 
 |Value|Trigger|Description|
 |:---|:---|:---|
-|`'delete'`|`0`|If consent is denied, then the recording is stopped, and then deleted.|
-|`'stop'`|`0`|If consent is denied, then the recording is stopped, but not deleted. That way, you have a recording of the respondent denying consent.|
-|`'start'`|`1`|If consent is approved, then the call recording starts. Also, the second part of the metadata will store the URL to the call recording information (see [Metadata](#Metadata) above for more information).|
+|`'delete'`|`0`|Deletes the recording. If consent is denied, then the recording is stopped, and then deleted.|
+|`'stop'`|`0`|Stops the recording only. If consent is denied, then the recording is stopped, but not deleted. That way, you have a recording of the respondent denying consent.|
+|`'start'`|`1`|Starts a recording for the active call. If consent is approved, then the call recording starts. Also, the second part of the metadata will store the URL to the call recording information (see [Metadata](#Metadata) above for more information).|
 
 In the sample form, the field "action" on row 26 asks which action should be taken, and this is used for the `action` parameter of the field plug-in. For actual data collection, this will be explicitly stated, like this: `action='deleted'`
 
