@@ -8,32 +8,30 @@
 
 ## Description
 
-*This field plug-in is part of a series of tools for working with Twilio in SurveyCTO. To learn more, check out our support article on [using Twilio with SurveyCTO to securely record phone calls only with consent](https://support.surveycto.com/hc/en-us/articles/360055415333)*
-
 This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our support article on [using Twilio in SurveyCTO](https://docs.google.com/document/d/1jovqNXwO30pCTF3gkXdDodgxcvHLhbljmzXdLgUPchY/edit?usp=sharing).
 
 This field plug-in can be used to stop, delete, or start a recording for an active Twilio call. This should be attached to a *select_one* field that has a value of `1` if consent is approved, and a value of `0` if consent is denied (the included "yesno" choice list will work well).
 
 [![](extras/readme-images/beta-release-download.jpg)](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip)
 
-### Feature list
+### Features
 
 * Stop all recordings for a call.
 * Stop-and-delete all recordings for a call.
 * Start a recording for a call.
 * Confirm by the enumerator if consent was approved or denied.
-* Pause until action is confirmed. The enumerator will not be able to continue until the action is successfully completed, or when a certain amount of time has passed after confirming the action (see [Timeout](#Timeout) below to learn more).
-* Track any issues that may arise, and store the recording URL if it is started.
+* Pause until action is confirmed. The enumerator will not be able to continue until the action is completed, or when a certain amount of time has passed after confirming the action (see [Timeout](#Timeout) below to learn more).
+* Record issues that may arise, and store the recording URL if it is started.
 
 ### Data format
 
-The field value will be simple, since it will have a value of either `1` or `0`, depending on the choice selected. Some data will also be stored in the metadata.
+The field value will be simple, since it will have a value of either `1` or `0`, depending on the choice selected. Important data will also be stored in the metadata.
 
 #### Metadata
 
 The metadata will be in two parts, separated by a pipe `|`.
 
-The first part is a success code about whether the action was completed successfully or not:
+The first part is a result code about whether the action was successful or not:
 `0`: The action failed in some way, followed by details of the issue
 `1`: The action completed successfully
 `2`: No action was taken, because none was needed
@@ -76,13 +74,13 @@ For example, if the `action` parameter has a value of 'delete', and the recordin
 
 #### Actions
 
-These are the values you can give to the `action` parameter. In this table, 'Value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For example, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1`, only if the choice selected has a value of `0`.
+These are the values you can give to the `action` parameter. In this table, 'Value' is the value you give to the `action` parameter, and 'Trigger' is the selected choice value that triggers the action. For example, if the `action` parameter has a value of 'delete', then nothing will happen if the choice selected has a value of `1` (when consent is granted), only if the choice selected has a value of `0` (when consent for recording is withheld).
 
 |Value|Trigger|Description|
 |:---|:---|:---|
 |`'delete'`|`0`|Deletes the recording. If consent is denied, then the recording is stopped, and then deleted.|
 |`'stop'`|`0`|Stops the recording only. If consent is denied, then the recording is stopped, but not deleted. That way, you have a recording of the respondent denying consent.|
-|`'start'`|`1`|Starts a recording for the active call. If consent is approved, then the call recording starts. Also, the second part of the metadata will store the URL to the call recording information (see [Metadata](#Metadata) above for more information).|
+|`'start'`|`1`|Starts a recording for the active call. If consent is approved, then the call recording starts. Also, the second part of the metadata will store the URL in the call recording information (see [Metadata](#Metadata) above for more information).|
 
 In the sample form, the field "action" on row 26 asks which action should be taken, and this is used for the `action` parameter of the field plug-in. For actual data collection, this will be explicitly stated, like this: `action='deleted'`
 
