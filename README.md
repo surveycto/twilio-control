@@ -3,7 +3,7 @@
 <img src="extras/readme-images/all-set.png" alt="All set" title="All set" width="300px"/>
 
 | Not complete | Confirmation | Working |
-| --- | --- | --- | --- |
+| --- | --- | --- |
 | <img src="extras/readme-images/not-complete.png" alt="Not complete" title="Not complete" width="150px"/> | <img src="extras/readme-images/confirmation.png" alt="Confirmation" title="Confirmation" width="150px"/> | <img src="extras/readme-images/working.png" alt="Working" title="Working" width="150px"/> |
 
 ## Description
