@@ -56,7 +56,10 @@ For example, if the `action` parameter has a value of 'delete', and the recordin
 
 1. Download the [sample form](https://github.com/surveycto/twilio-control/raw/master/extras/sample-form/Sample%20form%20-%20Delete%20Twilio%20recording.xlsx) from this repo.
 1. Download the [twilio-control.fieldplugin.zip](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip) file from this repo.
-1. Upload the sample form to your server with the field plug-in attached.
+1. Download the [twilio-call.fieldplugin.zip](https://github.com/surveycto/twilio-call/blob/master/twilio-call.fieldplugin.zip?raw=true) file from the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) repo.
+1. Download the [twilio_access.csv](https://github.com/surveycto/twilio-call/raw/master/extras/sample-form/twilio_access.csv) dataset template (right-click the link, click *Save link as*, set format to *All Files*, add `.csv` to the file name, and save).
+1. Update and save the twilio_access.csv file with information about your own Twilio account.
+1. Upload the sample form to your server with both field plug-ins and the CSV file attached.
 1. Adjust the parameters as you see fit.
 
 ### Parameters
