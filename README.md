@@ -8,7 +8,7 @@
 
 ## Description
 
-This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our support article on [using Twilio in SurveyCTO](https://docs.google.com/document/d/1jovqNXwO30pCTF3gkXdDodgxcvHLhbljmzXdLgUPchY/edit?usp=sharing).
+This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our support article on [using Twilio in SurveyCTO](https://support.surveycto.com/hc/en-us/articles/360055415333).
 
 This field plug-in can be used to stop, delete, or start a recording for an active Twilio call. This should be attached to a *select_one* field that has a value of `1` if consent is approved, and a value of `0` if consent is denied (the included "yesno" choice list will work well).
 
