@@ -8,7 +8,7 @@
 
 ## Description
 
-This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our Support Center article on [using Twilio in SurveyCTO](https://docs.google.com/document/d/1jovqNXwO30pCTF3gkXdDodgxcvHLhbljmzXdLgUPchY/edit?usp=sharing).
+This is a complement to the [twilio-call](https://github.com/surveycto/twilio-call/blob/master/README.md) field plug-in. For more great Twilio-related resources, check out our Support Center article on [using Twilio in SurveyCTO](https://support.surveycto.com/hc/en-us/articles/360055415333-Using-Twilio-with-SurveyCTO-to-securely-record-phone-calls-only-with-consent).
 
 This field plug-in can be used to stop, delete, or start a recording for an active Twilio call.
 
