@@ -14,6 +14,8 @@ This field plug-in can be used to stop, delete, or start a recording for an acti
 
 [![](extras/readme-images/beta-release-download.jpg)](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip)
 
+*This plug-in is currently under beta. If you you find a problem with the field plug-in, please email support@surveycto.com.*
+
 ### Features
 
 * Stop all recordings for a call.
