@@ -1,4 +1,4 @@
-# twilio-control
+# Twilio control
 
 <img src="extras/readme-images/all-set.png" alt="All set" title="All set" width="300px"/>
 
@@ -12,9 +12,7 @@ This is a complement to the [twilio-call](https://github.com/surveycto/twilio-ca
 
 This field plug-in can be used to stop, delete, or start a recording for an active Twilio call.
 
-[![](extras/readme-images/beta-release-download.jpg)](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip)
-
-*This plug-in is currently under beta. If you you find a problem with the field plug-in, please email support@surveycto.com.*
+[![Download](extras/readme-images/download-button.png)](https://github.com/surveycto/twilio-control/raw/master/twilio-control.fieldplugin.zip)
 
 ### Features
 
